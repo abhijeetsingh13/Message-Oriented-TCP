@@ -1,0 +1,55 @@
+|-----------------------------|
+|  Networks Lab Assignment 5  |
+|  Abhijeet Singh (20CS30001) |
+|  Gopal (20CS30021)          |
+|-----------------------------|
+
+
+++++++++++++++++
+Data Structures:
+++++++++++++++++
+
+-----------------
+(i) Send_Message:
+-----------------
+1. This is a table for storing information about the send message table.
+2. In the table corresponding to each entry there is sockfd of the socket making the my_send call. 
+3. Also the length of each message is stored in the table.
+4. And char *msg corresponding to each entry which will be malloced in my_socket and and the actual message in stored in this.
+5. This Send_Message Table is implemented as producer-consumer problem with the count variable.
+6. There is one read end which is st from send_thread will be reading the message and making the send call if count is greater than zero.
+7. Whereas end is the write end where entries in the send_message table will be inserted if a my_send call is made and count should be less than 10 since the table can store a maximum of 10 entries.
+
+----------------------
+(ii) Received_Message:
+----------------------
+1. This is a table for storing information about the Received Message table.
+2. In the table corresponding to each entry there is sockfd of the socket making the my_recv call.
+3. Also the length of each message is stored in the table.
+4. And char *msg corresponding to each entry which will be malloced in my_socket and and the actual message which is received in recv_thread is getting stored here.
+5. This Received_Message Table is implemented as producer-consumer problem with the count variable. There is one read end which is st from which my_recv will be reading the message and returning it to the socket making the my_recv call if the count is greater than zero.
+6. Whereas end is the write end where entries in the recieved_message table will be inserted by recv_thread if there is message waiting to be received and count of the received_message table is less than 10.
+
+
+
+
+
++++++++++++++++++++
+What happens when a
++++++++++++++++++++
+
+------------------------
+(i) my_send call is made
+------------------------
+1. If a my_send call is made it wakes after every 1 second and checks if there is an empty entry in the Send_Message Table and if it founds one it acquires the lock on the send_message_mutex so that only one thread can change Send_Message Table at once. 
+2. Then it copies the message in the Send_Message Table along with a header of length 4 added at the beginning of the message denoting the length of the message and increments the count and releases the lock on the send_message_mutex.
+3. Then send_thread wakes up every 1 second and acquires the lock on the send_message_mutex and checks if there is any message in the Send_Message Table and if there is one it makes the send call and decrements the count and releases the lock on the send_message_mutex.
+4. For each message it first retrieves the length from the send_message table and then makes the send call until the length of the message is sent.
+5. If there is no message in the Send_Message Table then it releases the lock.
+6. recv_thread gets a cond_signal when check is set to 1 and it then goes on a blocking call on the recv call and waits for the message to be received.
+7. When the message is received it first receives the length of the message and then makes receive call until the complete length of message is received and then acquires the lock and stores just the message without the header in the Received_Message Table and increments the count and releases the lock on the recv_message_mutex.
+
+-------------------------
+(ii) my_recv call is made
+-------------------------
+1. If a my_recv call is made it wakes after every 1 second and acquires the lock and checks if there is an full entry in the Received_Message Table and if it founds one it copy the message into *msg and decrements the count and releases the lock and then return the len of the received string.
